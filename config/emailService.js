@@ -4,6 +4,10 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 async function sendEmail(to, subject, html) {
   try {
+    if (!to || !subject || !html) {
+      throw new Error("Missing required email parameters");
+    }
+
     const msg = {
       to,
       from: process.env.EMAIL_USER, // verified email
@@ -15,7 +19,7 @@ async function sendEmail(to, subject, html) {
 
     return { success: true };
   } catch (error) {
-    console.error("SendGrid error:", error);
+    console.error("SendGrid error:", error.response?.body || error.message);
     return { success: false };
   }
 }
