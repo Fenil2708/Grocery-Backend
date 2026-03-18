@@ -1,33 +1,22 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
-// Configure transporter
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Send email function
-async function sendEmail(to, subject, text, html) {
+async function sendEmail(to, subject, html) {
   try {
-    const info = await transporter.sendMail({
-      from: `"BroBazar" <${process.env.EMAIL_USER}>`,
+    const msg = {
       to,
+      from: process.env.EMAIL_USER, // verified email
       subject,
-      text,
       html,
-    });
+    };
 
-    console.log("Email sent:", info.messageId);
+    await sgMail.send(msg);
 
-    return { success: true, messageId: info.messageId };
+    return { success: true };
   } catch (error) {
-    console.error("Error sending email:", error);
-    return { success: false, error: error.message };
+    console.error("SendGrid error:", error);
+    return { success: false };
   }
 }
 
