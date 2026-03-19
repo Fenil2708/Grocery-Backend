@@ -2,7 +2,7 @@ import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-async function sendEmail(to, subject, text, html) {
+async function sendEmail(to, subject, html, text) {
   try {
     if (!to || !subject || (!html && !text)) {
       throw new Error("Missing required email parameters");
@@ -12,8 +12,8 @@ async function sendEmail(to, subject, text, html) {
       to,
       from: process.env.EMAIL_USER,
       subject,
+      html,   // ✅ correct
       text,   // optional
-      html,   // optional
     };
 
     await sgMail.send(msg);
