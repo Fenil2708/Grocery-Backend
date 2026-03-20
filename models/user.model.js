@@ -56,12 +56,23 @@ const userSchema = mongoose.Schema(
         ref: "order",
       },
     ],
+
+    // 🔥 OTP fields
     otp: {
       type: String,
+      default: "",
     },
     otpExpires: {
       type: Date,
+      default: null,
     },
+
+    // 🔥 NEW FIELD (VERY IMPORTANT)
+    forgotPasswordVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     role: {
       type: String,
       enum: ["ADMIN", "USER"],

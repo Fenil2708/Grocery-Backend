@@ -91,7 +91,7 @@ export async function verifyEmailController(request, response) {
 
         if (isCodeValid && isNotExpired) {
             user.verify_Email = true;
-            user.otp = null;
+            user.otp = "";
             user.otpExpires = null;
 
             await user.save();
@@ -176,7 +176,7 @@ export async function loginUserController(request, response) {
 
         const cookiesOption = {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "None"
         }
 
@@ -256,7 +256,10 @@ export async function forgotPasswordController(request, response) {
             const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
             user.otp = verifyCode;
-            user.otpExpires = Date.now() + 600000
+            user.otpExpires = Date.now() + 600000;
+
+            // 🔥 ADD THIS
+            user.forgotPasswordVerified = false;
 
             await user.save();
 
@@ -324,6 +327,7 @@ export async function verifyForgotPasswordOTP(request, response) {
 
         user.otp = "";
         user.otpExpires = null;
+        user.forgotPasswordVerified = true; // 🔥 add this
 
         await user.save();
 
@@ -337,7 +341,7 @@ export async function verifyForgotPasswordOTP(request, response) {
         return response.status(500).json({
             message: error.message || error,
             error: true,
-            message: false
+            success: false
         })
     }
 }
@@ -366,6 +370,16 @@ export async function changePasswordController(request, response) {
             })
         }
 
+        // 🔥 NEW CHECK (VERY IMPORTANT)
+        // 🔥 BEST CHECK
+        if (!user.forgotPasswordVerified) {
+            return response.status(400).json({
+                message: "Please verify OTP first",
+                error: true,
+                success: false
+            });
+        }
+
         if (newPassword !== confirmPassword) {
             return response.status(400).json({
                 message: "new password and confirm password must be same",
@@ -379,6 +393,8 @@ export async function changePasswordController(request, response) {
 
         user.password = hashPassword;
         user.signUpWithGoogle = false;
+        user.forgotPasswordVerified = false;
+
         await user.save();
 
         return response.status(200).json({
@@ -391,7 +407,7 @@ export async function changePasswordController(request, response) {
         return response.status(500).json({
             message: error.message || error,
             error: true,
-            message: false
+            success: false
         })
     }
 }
@@ -412,7 +428,7 @@ export async function resendOtpController(request, response) {
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     user.otp = verifyCode;
-    user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
+    user.otpExpires = Date.now() + 2 * 60 * 1000;
 
     await sendEmailFun({
         sendTo: email,
@@ -440,7 +456,7 @@ export async function authWithGoogle(request, response) {
                 name: name,
                 mobile: mobile,
                 email: email,
-                password: "null",
+                password: null,
                 avatar: avatar,
                 verify_Email: true,
                 signUpWithGoogle: true,
@@ -451,7 +467,7 @@ export async function authWithGoogle(request, response) {
 
             const accessToken = await generateAccessToken(user?._id);
             const refreshToken = await generateRefreshToken(user?._id);
-            
+
             await UserModel.findByIdAndUpdate(user?._id, {
                 last_login_date: new Date()
             })
@@ -478,11 +494,11 @@ export async function authWithGoogle(request, response) {
             })
 
 
-        }else{
+        } else {
             const accessToken = await generateAccessToken(existUser?._id);
             const refreshToken = await generateRefreshToken(existUser?._id);
 
-             await UserModel.findByIdAndUpdate(existUser?._id, {
+            await UserModel.findByIdAndUpdate(existUser?._id, {
                 last_login_date: new Date()
             })
 
@@ -521,7 +537,7 @@ export async function getAllUsers(request, response) {
     try {
         const { search } = request.query;
         let query = {};
-        
+
         if (search) {
             query = {
                 $or: [
