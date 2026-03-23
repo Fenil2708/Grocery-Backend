@@ -14,44 +14,77 @@ export const getChatResponse = async (req, res) => {
       });
     }
 
+    const lowerMessage = message.toLowerCase();
     let aiResponse = "";
 
+    // ================= AI PART =================
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenAI({
           apiKey: process.env.GEMINI_API_KEY,
         });
 
-        // DB data
+        // ✅ Fetch DB data
         const products = await ProductModel.find({}).limit(5);
         const categories = await CategoryModel.find({}).limit(5);
 
         const productNames = products.map((p) => p.name).join(", ");
         const catNames = categories.map((c) => c.name).join(", ");
 
+        // ✅ Prompt
         const prompt = `
-You are a grocery assistant for Grocery Express.
-Reply short and helpful.
+You are a smart grocery assistant for "Grocery Express".
+Reply short, helpful and friendly.
 
-Products: ${productNames}
+Available Products: ${productNames}
 Categories: ${catNames}
 
-User: ${message}
+User Question: ${message}
         `;
 
-        // ✅ NEW WORKING CALL
+        // ✅ Gemini API call
         const result = await genAI.models.generateContent({
           model: "gemini-2.0-flash",
           contents: prompt,
         });
 
-        aiResponse = result.text;
+        aiResponse = result?.text || "";
+
       } catch (err) {
         console.log("Gemini Error:", err);
-        aiResponse = getMockResponse(message.toLowerCase());
+
+        // ================= SMART FALLBACK =================
+        // 🔥 Product search
+        const product = await ProductModel.findOne({
+          name: { $regex: lowerMessage, $options: "i" },
+        });
+
+        if (product) {
+          return res.json({
+            message: `🛒 ${product.name} - ₹${product.price}`,
+            success: true,
+            error: false,
+          });
+        }
+
+        // 🔥 Category suggestion
+        const category = await CategoryModel.findOne({
+          name: { $regex: lowerMessage, $options: "i" },
+        });
+
+        if (category) {
+          return res.json({
+            message: `📂 You can explore "${category.name}" category in our store.`,
+            success: true,
+            error: false,
+          });
+        }
+
+        // 🔥 Final fallback
+        aiResponse = getMockResponse(lowerMessage);
       }
     } else {
-      aiResponse = getMockResponse(message.toLowerCase());
+      aiResponse = getMockResponse(lowerMessage);
     }
 
     return res.json({
@@ -59,19 +92,38 @@ User: ${message}
       success: true,
       error: false,
     });
+
   } catch (error) {
     console.log("Chat Error:", error);
     return res.status(500).json({
-      message: "Chatbot error",
+      message: "Something went wrong with chatbot",
       error: true,
       success: false,
     });
   }
 };
 
-// fallback
+// ================= MOCK RESPONSES =================
 const getMockResponse = (message) => {
-  if (message.includes("hi")) return "Hello! 👋";
-  if (message.includes("order")) return "Check 'My Orders' 📦";
-  return "Ask me anything about groceries 🛒";
+  if (message.includes("hello") || message.includes("hi")) {
+    return "Hello! 👋 How can I help you today?";
+  }
+
+  if (message.includes("product") || message.includes("search")) {
+    return "You can search products using the search bar 🛒";
+  }
+
+  if (message.includes("order")) {
+    return "Go to 'My Orders' to track your order 📦";
+  }
+
+  if (message.includes("delivery")) {
+    return "Delivery takes 1-2 days 🚚";
+  }
+
+  if (message.includes("payment")) {
+    return "We support Razorpay payments 💳";
+  }
+
+  return "Ask me anything about groceries 😊";
 };
