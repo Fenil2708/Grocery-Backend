@@ -21,7 +21,7 @@ export const getChatResponse = async (req, res) => {
         if (process.env.GEMINI_API_KEY) {
             try {
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
                 // Fetch some context from DB to provide better answers
                 const products = await ProductModel.find({}).limit(5);
