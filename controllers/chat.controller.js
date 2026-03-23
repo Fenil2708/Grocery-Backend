@@ -1,6 +1,6 @@
 import ProductModel from "../models/product.model.js";
 import CategoryModel from "../models/category.model.js";
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 export const getChatResponse = async (req, res) => {
   try {
@@ -18,11 +18,11 @@ export const getChatResponse = async (req, res) => {
 
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI({
+        const genAI = new GoogleGenAI({
           apiKey: process.env.GEMINI_API_KEY,
         });
 
-        // ✅ DB data
+        // DB data
         const products = await ProductModel.find({}).limit(5);
         const categories = await CategoryModel.find({}).limit(5);
 
@@ -39,7 +39,7 @@ Categories: ${catNames}
 User: ${message}
         `;
 
-        // ✅ NEW API CALL (IMPORTANT 🔥)
+        // ✅ NEW WORKING CALL
         const result = await genAI.models.generateContent({
           model: "gemini-1.5-flash",
           contents: prompt,
@@ -72,7 +72,7 @@ User: ${message}
 };
 
 
-// ✅ fallback
+// fallback
 const getMockResponse = (message) => {
   if (message.includes("hi")) return "Hello! 👋";
   if (message.includes("order")) return "Check 'My Orders' 📦";
