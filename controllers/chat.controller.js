@@ -26,8 +26,8 @@ export const getChatResponse = async (req, res) => {
         const products = await ProductModel.find({}).limit(5);
         const categories = await CategoryModel.find({}).limit(5);
 
-        const productNames = products.map(p => p.name).join(", ");
-        const catNames = categories.map(c => c.name).join(", ");
+        const productNames = products.map((p) => p.name).join(", ");
+        const catNames = categories.map((c) => c.name).join(", ");
 
         const prompt = `
 You are a grocery assistant for Grocery Express.
@@ -41,12 +41,11 @@ User: ${message}
 
         // ✅ NEW WORKING CALL
         const result = await genAI.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-2.0-flash",
           contents: prompt,
         });
 
         aiResponse = result.text;
-
       } catch (err) {
         console.log("Gemini Error:", err);
         aiResponse = getMockResponse(message.toLowerCase());
@@ -60,7 +59,6 @@ User: ${message}
       success: true,
       error: false,
     });
-
   } catch (error) {
     console.log("Chat Error:", error);
     return res.status(500).json({
@@ -70,7 +68,6 @@ User: ${message}
     });
   }
 };
-
 
 // fallback
 const getMockResponse = (message) => {
