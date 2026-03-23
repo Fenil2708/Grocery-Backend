@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
-console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
-console.log("ADMIN_URL:", process.env.ADMIN_URL);
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -28,6 +26,7 @@ import paymentRouter from './routes/payment.route.js';
 import myListRouter from './routes/myList.route.js';
 import reviewRouter from './routes/review.route.js';
 import notificationRouter from './routes/notification.route.js';
+import chatRouter from './routes/chat.route.js';
 
 import { createServer } from 'http';
 import { initSocket } from './utils/socket.js';
@@ -81,6 +80,7 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/my-list', myListRouter);
 app.use('/api/review', reviewRouter);
 app.use('/api/notification', notificationRouter);
+app.use('/api/chat', chatRouter);
 
 connectDb().then(()=>{
     server.listen(process.env.PORT, ()=>{
